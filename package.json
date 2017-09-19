@@ -1,0 +1,28 @@
+{
+  "name": "blockchain",
+  "version": "1.0.0",
+  "description": "A simple blockchain",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/efichot/Blockchain.git"
+  },
+  "keywords": [
+    "blockchain"
+  ],
+  "author": "efichot",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/efichot/Blockchain/issues"
+  },
+  "homepage": "https://github.com/efichot/Blockchain#readme",
+  "dependencies": {
+    "body-parser": "^1.18.1",
+    "express": "^4.15.4",
+    "ws": "^3.2.0"
+  }
+}
