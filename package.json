@@ -22,6 +22,7 @@
   "homepage": "https://github.com/efichot/Blockchain#readme",
   "dependencies": {
     "body-parser": "^1.18.1",
+    "crypto-js": "^3.1.9-1",
     "express": "^4.15.4",
     "ws": "^3.2.0"
   }
