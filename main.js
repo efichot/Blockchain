@@ -17,12 +17,15 @@ class Block {
   }
 }
 
+var sockets = [];
+
 var myGenesisBlock = new Block(0, "0", Date.now(), "my genesis block!!", "816534932c2b7154836da6afc367695e6337db8a921823784c14378abed4f7d7"); // genesis block
 
 var blockchain = [myGenesisBlock];
 
 var initConnection = ws => {
-  
+  sockets.push(ws);
+ 
 }
 
 var connectToPeers = (newPeers) => {
@@ -80,12 +83,19 @@ var initHttpServer = () => {
   app.post('/mineBlock', (req, res) => { // data for the new block in the POST req 
     var newBlock = generateNextBlock(req.body.data); //create block
     addBlock(newBlock); // check if the block is valid and add block in the blockchain
-    
+
     res.send();
   });
 
   app.listen(http_port, () => console.log('Listening http on port: ' + http_port));
 }
 
+var initP2PServer = () => {
+  var server = new WebSocket.Server({ port: p2p_port });
+  // server.on('connection', ws => );
+  console.log('listening websocket p2p port on: ' + p2p_port);
+}
+
 connectToPeers(initialPeers); // useless for the first call when creating the first node but for the second call with the second nodes need to peers the two nodes
 initHttpServer();
+initP2PServer();
