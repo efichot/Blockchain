@@ -116,9 +116,24 @@ var initMessageHandler = ws => {
   });
 }
 
+var initErrorHandler = ws => {
+  var closeConnection = ws => {
+    console.log('connection failed to peer: ' + ws.url);
+    sockets.splice(sockets.indexOf(ws), 1);
+  }
+  ws.on('close', () => closeConnection(ws));
+  ws.on('error', () => closeConnection(ws));
+}
+
+var queryChainLengthMsg = () => ({
+  "type": MessageType.QUERY_LATEST
+});
+
 var initConnection = ws => {
   sockets.push(ws);
-  initMessageHandler(ws);
+  initMessageHandler(ws); // management of message between the nodes
+  initErrorHandler(ws); // management of errors (close or fail)
+  write(ws, queryChainLengthMsg()); 
 }
 
 var connectToPeers = (newPeers) => {
