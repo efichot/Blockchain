@@ -23,9 +23,102 @@ var myGenesisBlock = new Block(0, "0", Date.now(), "my genesis block!!", "816534
 
 var blockchain = [myGenesisBlock];
 
+var MessageType = {
+  QUERY_LATEST: 0,
+  QUERY_ALL: 1,
+  RESPONSE_BLOCKCHAIN: 2
+};
+
+var responseChainMsg = () => ({
+  "type": MessageType.RESPONSE_BLOCKCHAIN,
+  "data": JSON.stringify([blockchain])
+})
+
+var responseLatestMsg = () => ({
+  "type": MessageType.RESPONSE_BLOCKCHAIN,
+  "data": JSON.stringify([getLatestBlock()])
+});
+
+var write = (ws, message) => {
+  ws.send(JSON.stringify(message));
+}
+
+var broadcast = (message) => { // broadcast to all nodes
+  sockets.forEach(socket => write(socket, message));
+}
+
+var queryAllMsg = () => ({
+  "type": MessageType.QUERY_ALL
+});
+
+var isValidChain = (blockchainToValidate) => {
+  if (JSON.stringify(blockchainToValidate[0]) !== JSON.stringify(blockchain[0])) { // check if the genesis block are correct
+    return false;
+  }
+  var tempBlocks = [blockchainToValidate[0]];
+  for (i = 1; i < blockchainToValidate.length; i++) {
+    if (isValidNewBlock(blockchainToValidate[i], tempBlocks[i - 1])) {
+      tempBlocks.push(blockchainToValidate[i]);
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+
+var replaceChain = (newBlocks) => {
+  if (isValidChain(newBlocks) && newBlocks.length > blockchain.length) {
+    console.log('Received blockchain is valid. Replacing current blockchain with received blockchain');
+    blockchain = newBlocks;
+    broadcast(responseLatestMsg());
+  } else {
+    console.log('Received blockchain invalid!');
+  }
+}
+
+var handleBlockchainResponse = (message) => {
+  var receivedBlocks = JSON.parse(message.data).sort((b1, b2) => (b1 - b2));
+  var latestBlockReceived = receivedBlocks[receivedBlocks.length - 1];
+  var latestBlockHold = getLatestBlock();
+  if (latestBlockReceived.index > latestBlockHold.index) {
+    console.log('current blockchain possibly behind. We got: ' + latestBlockHold.index + ' Peer got: ' + latestBlockReceived.index);
+    if (latestBlockHold.hash === lastestBlockReceived.previousHash) {
+      console.log('We can append the received block to our blockchain');
+      blockchain.push(latestBlockReceived);
+      broadcast(responseLatestMsg());
+    } else if (receivedBlocks.length === 1) {
+      console.log('We have to query the chain from our peer');
+      broadcast(queryAllMsg());
+    } else {
+      console.log('received blockchain is longer than current blockchain, we need to replace the current by the received');
+      replaceChain(receivedBlocks);
+    }
+  } else {
+    console.log('received blockchain is not longer than current blockchain. Do nothing');
+  }
+}
+
+var initMessageHandler = ws => {
+  ws.on('message', (data) => { // when all the frames are received
+    var message = JSON.parse(data);
+    console.log('message received: ' + JSON.stringify(message));
+    switch(message.type) {
+      case MessageType.QUERY_LATEST:
+        write(ws, responseLatestMsg());
+        break;
+      case MessageType.QUERY_ALL:
+        write(ws, responseChainMsg());
+        break;
+      case MessageType.RESPONSE_BLOCKCHAIN:
+        handleBlockchainResponse(message);
+        break;
+    }
+  });
+}
+
 var initConnection = ws => {
   sockets.push(ws);
- 
+  initMessageHandler(ws);
 }
 
 var connectToPeers = (newPeers) => {
@@ -87,12 +180,21 @@ var initHttpServer = () => {
     res.send();
   });
 
+  app.get('/peers', (req, res) => { //list of all nodes
+    res.send(sockets.map(s => s._socket.remoteAddress + ':' + s._socket.remotePort));
+  });
+
+  app.post('/addPeer', (req, res) => { // add new nodes
+    connectToPeers([req.body.peer]);
+    res.send();
+  });
+
   app.listen(http_port, () => console.log('Listening http on port: ' + http_port));
 }
 
 var initP2PServer = () => {
   var server = new WebSocket.Server({ port: p2p_port });
-  // server.on('connection', ws => );
+  server.on('connection', ws => initConnection(ws));
   console.log('listening websocket p2p port on: ' + p2p_port);
 }
 
