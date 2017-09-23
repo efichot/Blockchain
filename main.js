@@ -82,7 +82,7 @@ var handleBlockchainResponse = (message) => {
   var latestBlockHold = getLatestBlock();
   if (latestBlockReceived.index > latestBlockHold.index) {
     console.log('current blockchain possibly behind. We got: ' + latestBlockHold.index + ' Peer got: ' + latestBlockReceived.index);
-    if (latestBlockHold.hash === lastestBlockReceived.previousHash) {
+    if (latestBlockHold.hash === latestBlockReceived.previousHash) {
       console.log('We can append the received block to our blockchain');
       blockchain.push(latestBlockReceived);
       broadcast(responseLatestMsg());
@@ -191,7 +191,7 @@ var initHttpServer = () => {
   app.post('/mineBlock', (req, res) => { // data for the new block in the POST req 
     var newBlock = generateNextBlock(req.body.data); //create block
     addBlock(newBlock); // check if the block is valid and add block in the blockchain
-
+    broadcast(responseLatestMsg());
     res.send();
   });
 
