@@ -31,7 +31,7 @@ var MessageType = {
 
 var responseChainMsg = () => ({
   "type": MessageType.RESPONSE_BLOCKCHAIN,
-  "data": JSON.stringify([blockchain])
+  "data": JSON.stringify(blockchain)
 })
 
 var responseLatestMsg = () => ({
@@ -78,8 +78,11 @@ var replaceChain = (newBlocks) => {
 
 var handleBlockchainResponse = (message) => {
   var receivedBlocks = JSON.parse(message.data).sort((b1, b2) => (b1 - b2));
+  console.log(receivedBlocks);
   var latestBlockReceived = receivedBlocks[receivedBlocks.length - 1];
   var latestBlockHold = getLatestBlock();
+  console.log('index of latestBlockReceived:' + latestBlockReceived.index);
+  console.log('index of latestCurrentBlockchain:' + latestBlockHold.index);  
   if (latestBlockReceived.index > latestBlockHold.index) {
     console.log('current blockchain possibly behind. We got: ' + latestBlockHold.index + ' Peer got: ' + latestBlockReceived.index);
     if (latestBlockHold.hash === latestBlockReceived.previousHash) {
